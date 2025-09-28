@@ -1,8 +1,9 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Page() {
-  useEffect(() => { }, []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const onSubmit = (e) => {
     e.preventDefault();
     const username = (document.getElementById('username')?.value || '').trim().toUpperCase();
@@ -21,6 +22,7 @@ export default function Page() {
       if (err) { err.textContent = 'Invalid user ID format. Please use S-..., T-..., or A-...'; err.classList.remove('hidden'); }
     }
   };
+  if (!mounted) return null;
   return (
     <div className="flex items-center justify-center h-screen">
       <div className="w-full max-w-sm bg-white p-8 rounded-2xl shadow-lg">
