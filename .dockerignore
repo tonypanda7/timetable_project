@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+.env
+.venv/
+venv/
+.git/
+.gitignore
+Dockerfile*
+node_modules/
+
+# Local data and caches
+uploads/*
+!uploads/*.csv
+*.db
+.timetable.db
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
