@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const datasets = [
   { id: 'teachers', name: 'Teachers', endpoint: '/api/admin/upload/teachers' },
@@ -10,6 +10,8 @@ const datasets = [
 ];
 
 export default function AdminPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
     createUploadForms();
     datasets.forEach(d => {
@@ -143,6 +145,7 @@ export default function AdminPage() {
     } catch (error) { alert(`Error: ${error.message}`); }
   }
 
+  if (!mounted) return null;
   return (
     <main className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <header className="mb-8">
