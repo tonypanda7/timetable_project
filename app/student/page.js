@@ -1,8 +1,10 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function StudentPage() {
-  useEffect(() => { init(); }, []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { if (mounted) init(); }, [mounted]);
 
   async function init() {
     const STUDENT_ID = sessionStorage.getItem('loggedInUserId');
@@ -91,6 +93,7 @@ export default function StudentPage() {
     } finally { saveBtn?.removeAttribute('disabled'); }
   }
 
+  if (!mounted) return null;
   return (
     <main className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
