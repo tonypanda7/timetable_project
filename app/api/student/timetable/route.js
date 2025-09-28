@@ -5,7 +5,13 @@ export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const student_id = searchParams.get('student_id');
   if (!student_id) return Response.json({ error: 'Student ID must be provided.' }, { status: 400 });
-  const { GENERATED_TIMETABLE } = getState();
+  let { GENERATED_TIMETABLE } = getState();
+  if (!Array.isArray(GENERATED_TIMETABLE)) {
+    try {
+      const { getTimetableFromStorage } = await import('@/lib/supabaseCsv');
+      GENERATED_TIMETABLE = await getTimetableFromStorage();
+    } catch (_) {}
+  }
   if (!Array.isArray(GENERATED_TIMETABLE)) return Response.json({ error: 'No timetable has been generated.' }, { status: 404 });
   const student_schedule = [];
   for (const entry of GENERATED_TIMETABLE) {
