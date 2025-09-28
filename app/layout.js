@@ -10,7 +10,7 @@ export default function RootLayout({ children }) {
         <Script src="https://cdn.tailwindcss.com" strategy="beforeInteractive" />
         <style>{` body { font-family: 'Inter', sans-serif; } `}</style>
       </head>
-      <body className="bg-gray-100">{children}</body>
+      <body className="bg-gray-100" suppressHydrationWarning>{children}</body>
     </html>
   );
 }
