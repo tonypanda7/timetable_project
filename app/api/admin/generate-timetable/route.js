@@ -1,7 +1,7 @@
 export const runtime = 'nodejs';
 import { AntColonyTimetableSolver } from '@/lib/solver';
 import { setGeneratedTimetable, replaceSubOffers, replaceCancellationRequests } from '@/lib/state';
-import { fetchAllFrom } from '@/lib/firebaseCsv';
+import { fetchAll } from '@/lib/supabaseCsv';
 
 function coerceArray(arr) {
   return arr.map((obj) => {
