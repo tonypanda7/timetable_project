@@ -1,6 +1,7 @@
 export const runtime = 'nodejs';
 import db from '@/lib/db';
 import { getState, replaceCancellationRequests, pushSubOffer } from '@/lib/state';
+import { randomUUID } from 'crypto';
 
 export async function POST(request) {
   const body = await request.json();
@@ -23,7 +24,7 @@ export async function POST(request) {
         const isFree = !occupied.has(`${t.id}|${cancelled.slot}`);
         const canTeach = [t.first_preference, t.second_preference].includes(cancelled.course.course_name);
         if (t.id !== original.teacher_id && isFree && canTeach) {
-          const offer = { id: crypto.randomUUID(), details: { course_id: cancelled.course.id, group: cancelled.group, students: cancelled.students, room_id: cancelled.room.id, slot: cancelled.slot }, course_name: cancelled.course.course_name, group: cancelled.group, students: cancelled.students, slot: cancelled.slot, offered_to_teacher_id: t.id };
+          const offer = { id: randomUUID(), details: { course_id: cancelled.course.id, group: cancelled.group, students: cancelled.students, room_id: cancelled.room.id, slot: cancelled.slot }, course_name: cancelled.course.course_name, group: cancelled.group, students: cancelled.students, slot: cancelled.slot, offered_to_teacher_id: t.id };
           pushSubOffer(offer);
         }
       }
