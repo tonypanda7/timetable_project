@@ -1,5 +1,5 @@
 export const runtime = 'nodejs';
-import { importCsvToFirestoreAndStorage } from '@/lib/firebaseCsv';
+import { importCsvToSupabase } from '@/lib/supabaseCsv';
 
 export async function POST(request) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request) {
     const file = form.get('file');
     if (!file) return Response.json({ error: 'No file part' }, { status: 400 });
     const buf = Buffer.from(await file.arrayBuffer());
-    const result = await importCsvToFirestoreAndStorage('teachers.csv', buf, 'teachers');
+    const result = await importCsvToSupabase('teachers.csv', buf, 'teachers');
     return Response.json({ message: 'Teacher data uploaded!', ...result }, { status: 201 });
   } catch (e) {
     return Response.json({ error: e.message || 'Upload failed' }, { status: 500 });
