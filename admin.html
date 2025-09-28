@@ -119,6 +119,7 @@
                     if (response.ok) {
                         textSpan.textContent = file.name;
                         document.getElementById(`${dataset.id}-status`).classList.replace('dot-red', 'dot-green');
+                        createStatusIndicators();
                     } else {
                         throw new Error(result.error || 'Upload failed');
                     }
@@ -132,7 +133,37 @@
             }
         }
 
-        function createStatusIndicators() { /* ... unchanged ... */ }
+        async function createStatusIndicators() {
+            const container = document.getElementById('status-container');
+            container.innerHTML = '<p class="text-gray-500">Loading status...</p>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/admin/status`);
+                if (!res.ok) throw new Error('Failed to fetch status');
+                const s = await res.json();
+                const item = (label, ok, extra='') => `
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg border">
+                        <div class="flex items-center space-x-2">
+                            <span class="status-dot ${ok ? 'dot-green' : 'dot-red'}"></span>
+                            <span class="text-sm text-gray-700">${label}</span>
+                        </div>
+                        ${extra}
+                    </div>`;
+                const uploads = ['teachers','students','courses','classrooms','feedback']
+                    .map(k => item(`${k.charAt(0).toUpperCase()+k.slice(1)} CSV`, s.uploads[k]));
+                const dbCounts = Object.entries(s.counts)
+                    .map(([k,v]) => `<span class=\"text-xs text-gray-500\">${k}: ${v}</span>`)
+                    .join(' · ');
+                container.innerHTML = [
+                    item('Database connection', s.db_connected, `<span class=\"text-xs text-gray-500\">${dbCounts}</span>`),
+                    item('Timetable generated', s.timetable_generated),
+                    item('Pending cancellation requests', s.pending_requests > 0, `<span class=\"text-xs text-gray-500\">${s.pending_requests}</span>`),
+                    item('Open substitution offers', s.substitution_offers > 0, `<span class=\"text-xs text-gray-500\">${s.substitution_offers}</span>`),
+                    ...uploads
+                ].join('');
+            } catch (e) {
+                container.innerHTML = '<p class="text-red-600 text-sm">Failed to load status.</p>';
+            }
+        }
         
         async function fetchAndDisplayRequests() {
             const list = document.getElementById('requests-list');
@@ -186,6 +217,7 @@
                 document.getElementById(`${d.id}-file`).addEventListener('change', () => handleFileUpload(d));
             });
             fetchAndDisplayRequests();
+            createStatusIndicators();
         });
 
         document.getElementById('generate-btn').addEventListener('click', async function() {
@@ -208,4 +240,3 @@
     </script>
 </body>
 </html>
-

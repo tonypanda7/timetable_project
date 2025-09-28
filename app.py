@@ -102,6 +102,40 @@ def generate_timetable():
 def get_cancellation_requests():
     return jsonify(CANCELLATION_REQUESTS)
 
+@app.route('/api/admin/status', methods=['GET'])
+def get_admin_status():
+    db_ok = False
+    counts = {}
+    db_session = None
+    try:
+        db_session = Session()
+        counts = {
+            "teachers": db_session.query(Teacher).count(),
+            "students": db_session.query(Student).count(),
+            "courses": db_session.query(Course).count(),
+            "classrooms": db_session.query(Classroom).count(),
+            "feedback": db_session.query(Feedback).count(),
+            "elective_choices": db_session.query(StudentElective).count(),
+        }
+        db_ok = True
+    except Exception:
+        db_ok = False
+    finally:
+        try:
+            if db_session is not None:
+                db_session.close()
+        except Exception:
+            pass
+    uploads_present = {name: os.path.exists(os.path.join(UPLOAD_FOLDER, f"{name}.csv")) for name in ["teachers","students","courses","classrooms","feedback"]}
+    return jsonify({
+        "db_connected": db_ok,
+        "counts": counts,
+        "uploads": uploads_present,
+        "timetable_generated": GENERATED_TIMETABLE is not None and len(GENERATED_TIMETABLE) > 0,
+        "pending_requests": len(CANCELLATION_REQUESTS),
+        "substitution_offers": len(SUBSTITUTION_OFFERS),
+    })
+
 @app.route('/api/admin/handle-cancellation', methods=['POST'])
 def handle_cancellation():
     global GENERATED_TIMETABLE, CANCELLATION_REQUESTS, SUBSTITUTION_OFFERS
@@ -232,4 +266,3 @@ def accept_substitution():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
