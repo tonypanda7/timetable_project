@@ -1,35 +1,24 @@
-# syntax=docker/dockerfile:1
-FROM python:3.11-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
-
-# System deps (minimal). Manylinux wheels should cover numpy/pandas, but keep build tools for safety
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       build-essential \
-       curl \
-       ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
+# Use official Node image
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci || npm install
 
-# Install Python dependencies first (leverage layer cache)
-COPY requirements.txt ./
-RUN pip install --upgrade pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir gunicorn
-
-# Copy application source
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN npm run build
 
-# Create runtime directories
-RUN mkdir -p uploads \
-    && chmod -R 775 uploads
-
-ENV FLASK_ENV=production
-EXPOSE 8000
-
-# Start with gunicorn (2 workers, 1 thread each)
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:8000", "app:app"]
+FROM node:20-alpine AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+# Next.js standalone output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public || true
+# Ensure database and uploads directory exist and are writable
+RUN mkdir -p /app/uploads && chown -R node:node /app && chmod -R 775 /app
+USER node
+EXPOSE 3000
+CMD ["node", "server.js"]
