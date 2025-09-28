@@ -1,23 +1,23 @@
 export const runtime = 'nodejs';
-import { collectionCount, datasetExistsInStorage } from '@/lib/firebaseCsv';
+import { tableCount, datasetExists } from '@/lib/supabaseCsv';
 import { getState } from '@/lib/state';
 
 export async function GET() {
   try {
     const counts = {
-      teachers: await collectionCount('teachers'),
-      students: await collectionCount('students'),
-      courses: await collectionCount('courses'),
-      classrooms: await collectionCount('classrooms'),
-      feedback: await collectionCount('feedback'),
-      elective_choices: await collectionCount('student_electives'),
+      teachers: await tableCount('teachers'),
+      students: await tableCount('students'),
+      courses: await tableCount('courses'),
+      classrooms: await tableCount('classrooms'),
+      feedback: await tableCount('feedback'),
+      elective_choices: await tableCount('student_electives'),
     };
     const uploads = {
-      teachers: await datasetExistsInStorage('teachers'),
-      students: await datasetExistsInStorage('students'),
-      courses: await datasetExistsInStorage('courses'),
-      classrooms: await datasetExistsInStorage('classrooms'),
-      feedback: await datasetExistsInStorage('feedback'),
+      teachers: await datasetExists('teachers'),
+      students: await datasetExists('students'),
+      courses: await datasetExists('courses'),
+      classrooms: await datasetExists('classrooms'),
+      feedback: await datasetExists('feedback'),
     };
     const { GENERATED_TIMETABLE, CANCELLATION_REQUESTS, SUBSTITUTION_OFFERS } = getState();
     return Response.json({
