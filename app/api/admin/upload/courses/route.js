@@ -1,12 +1,15 @@
 export const runtime = 'nodejs';
-import { loadCsvToDb, saveUploadedFile } from '@/lib/utils';
+import { importCsvToSupabase } from '@/lib/supabaseCsv';
 
 export async function POST(request) {
-  const form = await request.formData();
-  const file = form.get('file');
-  if (!file) return Response.json({ error: 'No file part' }, { status: 400 });
-  const buf = Buffer.from(await file.arrayBuffer());
-  const path = saveUploadedFile('courses.csv', buf);
-  loadCsvToDb(path, 'courses');
-  return Response.json({ message: 'Course data uploaded!' }, { status: 201 });
+  try {
+    const form = await request.formData();
+    const file = form.get('file');
+    if (!file) return Response.json({ error: 'No file part' }, { status: 400 });
+    const buf = Buffer.from(await file.arrayBuffer());
+    const result = await importCsvToSupabase('courses.csv', buf, 'courses');
+    return Response.json({ message: 'Course data uploaded!', ...result }, { status: 201 });
+  } catch (e) {
+    return Response.json({ error: e.message || 'Upload failed' }, { status: 500 });
+  }
 }

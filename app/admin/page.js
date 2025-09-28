@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => {
+    if (!mounted) return;
     createUploadForms();
     datasets.forEach(d => {
       const el = document.getElementById(`${d.id}-file`);
@@ -20,7 +21,7 @@ export default function AdminPage() {
     });
     fetchAndDisplayRequests();
     createStatusIndicators();
-  }, []);
+  }, [mounted]);
 
   async function createStatusIndicators() {
     const container = document.getElementById('status-container');

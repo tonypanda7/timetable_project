@@ -1,22 +1,24 @@
 export const runtime = 'nodejs';
-import fs from 'fs';
-import path from 'path';
-import db from '@/lib/db';
+import { tableCount, datasetExists } from '@/lib/supabaseCsv';
 import { getState } from '@/lib/state';
 
 export async function GET() {
   try {
     const counts = {
-      teachers: db.prepare('SELECT COUNT(*) as c FROM teachers').get().c,
-      students: db.prepare('SELECT COUNT(*) as c FROM students').get().c,
-      courses: db.prepare('SELECT COUNT(*) as c FROM courses').get().c,
-      classrooms: db.prepare('SELECT COUNT(*) as c FROM classrooms').get().c,
-      feedback: db.prepare('SELECT COUNT(*) as c FROM feedback').get().c,
-      elective_choices: db.prepare('SELECT COUNT(*) as c FROM student_electives').get().c,
+      teachers: await tableCount('teachers'),
+      students: await tableCount('students'),
+      courses: await tableCount('courses'),
+      classrooms: await tableCount('classrooms'),
+      feedback: await tableCount('feedback'),
+      elective_choices: await tableCount('student_electives'),
     };
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    const uploads = ['teachers','students','courses','classrooms','feedback'].reduce((acc, name) => {
-      acc[name] = fs.existsSync(path.join(uploadsDir, `${name}.csv`)); return acc; }, {});
+    const uploads = {
+      teachers: await datasetExists('teachers'),
+      students: await datasetExists('students'),
+      courses: await datasetExists('courses'),
+      classrooms: await datasetExists('classrooms'),
+      feedback: await datasetExists('feedback'),
+    };
     const { GENERATED_TIMETABLE, CANCELLATION_REQUESTS, SUBSTITUTION_OFFERS } = getState();
     return Response.json({
       db_connected: true,
