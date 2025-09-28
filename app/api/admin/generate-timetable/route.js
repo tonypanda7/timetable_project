@@ -35,6 +35,10 @@ export async function POST() {
     const finalTimetable = solver.solve();
     if (finalTimetable && finalTimetable.length > 0) {
       setGeneratedTimetable(finalTimetable);
+      try {
+        const { saveTimetableAndIndexes } = await import('@/lib/supabaseCsv');
+        await saveTimetableAndIndexes(finalTimetable);
+      } catch (err) { /* non-fatal: in-memory still available */ }
       return Response.json({ message: 'Semester-aware timetables generated!', best_score: solver.bestTimetableScore });
     }
     return Response.json({ error: 'Failed to generate a valid timetable.' }, { status: 500 });
