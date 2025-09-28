@@ -1,6 +1,5 @@
 export const runtime = 'nodejs';
 import { collectionCount, datasetExistsInStorage } from '@/lib/firebaseCsv';
-import { getState } from '@/lib/state';
 
 export async function GET() {
   try {
@@ -19,14 +18,13 @@ export async function GET() {
       classrooms: await datasetExistsInStorage('classrooms'),
       feedback: await datasetExistsInStorage('feedback'),
     };
-    const { GENERATED_TIMETABLE, CANCELLATION_REQUESTS, SUBSTITUTION_OFFERS } = getState();
     return Response.json({
       db_connected: true,
       counts,
       uploads,
-      timetable_generated: Array.isArray(GENERATED_TIMETABLE) && GENERATED_TIMETABLE.length > 0,
-      pending_requests: CANCELLATION_REQUESTS.length,
-      substitution_offers: SUBSTITUTION_OFFERS.length,
+      timetable_generated: false,
+      pending_requests: 0,
+      substitution_offers: 0,
     });
   } catch (e) {
     return Response.json({ db_connected: false, counts: {}, uploads: {}, timetable_generated: false, pending_requests: 0, substitution_offers: 0 }, { status: 200 });

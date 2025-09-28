@@ -1,12 +1,11 @@
 export const runtime = 'nodejs';
-import { loadCsvToDb, saveUploadedFile } from '@/lib/utils';
+import { importCsvToFirestoreAndStorage } from '@/lib/firebaseCsv';
 
 export async function POST(request) {
   const form = await request.formData();
   const file = form.get('file');
   if (!file) return Response.json({ error: 'No file part' }, { status: 400 });
   const buf = Buffer.from(await file.arrayBuffer());
-  const path = saveUploadedFile('teachers.csv', buf);
-  loadCsvToDb(path, 'teachers');
+  await importCsvToFirestoreAndStorage('teachers.csv', buf, 'teachers');
   return Response.json({ message: 'Teacher data uploaded!' }, { status: 201 });
 }
