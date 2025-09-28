@@ -1,8 +1,10 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function TeacherPage() {
-  useEffect(() => { fetchAndRenderData(); }, []);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { if (mounted) fetchAndRenderData(); }, [mounted]);
   const TEACHER_ID = typeof window !== 'undefined' ? sessionStorage.getItem('loggedInUserId') : null;
 
   async function fetchAndRenderData() {
@@ -90,6 +92,7 @@ export default function TeacherPage() {
 
   let activeCancellationRequest = null;
 
+  if (!mounted) return null;
   return (
     <main className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
