@@ -21,12 +21,12 @@ export async function POST() {
   try {
     replaceSubOffers([]); replaceCancellationRequests([]); setGeneratedTimetable(null);
     const [teachers, students, courses, classrooms, feedback, electiveChoices] = await Promise.all([
-      fetchAllFrom('teachers'),
-      fetchAllFrom('students'),
-      fetchAllFrom('courses'),
-      fetchAllFrom('classrooms'),
-      fetchAllFrom('feedback'),
-      fetchAllFrom('student_electives'),
+      fetchAll('teachers'),
+    fetchAll('students'),
+    fetchAll('courses'),
+    fetchAll('classrooms'),
+    fetchAll('feedback'),
+    fetchAll('student_electives'),
     ]);
     if (teachers.length === 0 || students.length === 0 || courses.length === 0 || classrooms.length === 0)
       return Response.json({ error: 'Not enough base data.' }, { status: 400 });
