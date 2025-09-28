@@ -6,6 +6,11 @@ export default function StudentPage() {
   useEffect(() => { setMounted(true); }, []);
   useEffect(() => { if (mounted) init(); }, [mounted]);
 
+  function logout() {
+    try { sessionStorage.removeItem('loggedInUserId'); } catch (_) {}
+    window.location.href = '/';
+  }
+
   async function init() {
     const STUDENT_ID = sessionStorage.getItem('loggedInUserId');
     if (!STUDENT_ID) {
@@ -104,6 +109,7 @@ export default function StudentPage() {
         <div className="mt-4 sm:mt-0 flex space-x-2">
           <button className="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Download PDF</button>
           <button className="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Download Excel</button>
+          <button onClick={logout} className="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Logout</button>
         </div>
       </header>
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">

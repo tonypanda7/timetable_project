@@ -7,6 +7,11 @@ export default function TeacherPage() {
   useEffect(() => { if (mounted) fetchAndRenderData(); }, [mounted]);
   const TEACHER_ID = typeof window !== 'undefined' ? sessionStorage.getItem('loggedInUserId') : null;
 
+  function logout() {
+    try { sessionStorage.removeItem('loggedInUserId'); } catch (_) {}
+    window.location.href = '/';
+  }
+
   async function fetchAndRenderData() {
     if (!TEACHER_ID) {
       document.body.innerHTML = '<div class="text-center p-8 text-red-600">Error: Not logged in. Please <a href="/" class="text-blue-600 underline">login</a> first.</div>';
@@ -100,9 +105,12 @@ export default function TeacherPage() {
           <h1 className="text-3xl font-bold text-gray-800">My Weekly Timetable</h1>
           <p className="text-gray-500 mt-1">Logged in as: <span id="teacher-id-display" className="font-semibold text-gray-700"></span></p>
         </div>
-        <div className="bg-white p-3 rounded-lg shadow-sm text-center mt-4 sm:mt-0">
-          <p className="text-sm text-gray-500">Weekly Hours Left</p>
-          <p id="workload-display" className="text-2xl font-bold text-blue-600">--</p>
+        <div className="flex flex-col items-end gap-2 mt-4 sm:mt-0">
+          <div className="bg-white p-3 rounded-lg shadow-sm text-center">
+            <p className="text-sm text-gray-500">Weekly Hours Left</p>
+            <p id="workload-display" className="text-2xl font-bold text-blue-600">--</p>
+          </div>
+          <button onClick={logout} className="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Logout</button>
         </div>
       </header>
       <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">

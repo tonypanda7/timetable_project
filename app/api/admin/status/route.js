@@ -20,11 +20,16 @@ export async function GET() {
       feedback: await datasetExists('feedback'),
     };
     const { GENERATED_TIMETABLE, CANCELLATION_REQUESTS, SUBSTITUTION_OFFERS } = getState();
+    let persisted = false;
+    try {
+      const { datasetFileExists } = await import('@/lib/supabaseCsv');
+      persisted = await datasetFileExists('timetable.json');
+    } catch (_) {}
     return Response.json({
       db_connected: true,
       counts,
       uploads,
-      timetable_generated: Array.isArray(GENERATED_TIMETABLE) && GENERATED_TIMETABLE.length > 0,
+      timetable_generated: (Array.isArray(GENERATED_TIMETABLE) && GENERATED_TIMETABLE.length > 0) || persisted,
       pending_requests: CANCELLATION_REQUESTS.length,
       substitution_offers: SUBSTITUTION_OFFERS.length,
     });

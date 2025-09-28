@@ -23,6 +23,11 @@ export default function AdminPage() {
     createStatusIndicators();
   }, [mounted]);
 
+  function logout() {
+    try { sessionStorage.removeItem('loggedInUserId'); } catch (_) {}
+    window.location.href = '/';
+  }
+
   async function createStatusIndicators() {
     const container = document.getElementById('status-container');
     if (!container) return;
@@ -149,9 +154,12 @@ export default function AdminPage() {
   if (!mounted) return null;
   return (
     <main className="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-      <header className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">Admin Dashboard</h1>
-        <p className="text-gray-500 mt-1">Manage datasets and generate the master timetable.</p>
+      <header className="mb-8 flex items-start sm:items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-800">Admin Dashboard</h1>
+          <p className="text-gray-500 mt-1">Manage datasets and generate the master timetable.</p>
+        </div>
+        <button onClick={logout} className="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Logout</button>
       </header>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
