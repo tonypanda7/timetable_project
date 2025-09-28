@@ -1,0 +1,6 @@
+id,program_name,semester,course_name,credits,course_type,is_lab,style
+1,CS,1,Intro to CS,3,Major,Theory,heavy-theory
+2,CS,3,Data Structures,3,Major,Theory,heavy-theory
+3,CS,1,Machine Learning,2,Minor,Theory,hands-on
+4,CS,3,Cybersecurity,2,Skill-Based,Theory,light
+5,BBA,1,Business 101,3,Major,Theory,light

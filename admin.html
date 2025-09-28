@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Timetable Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .card { background-color: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .file-input-label { transition: all 0.2s ease-in-out; }
+        .file-input-label:hover { background-color: #eef2ff; border-color: #4f46e5; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot-red { background-color: #ef4444; }
+        .dot-green { background-color: #22c55e; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <main class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-800">Admin Dashboard</h1>
+            <p class="text-gray-500 mt-1">Manage datasets and generate the master timetable.</p>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Data Uploads -->
+            <div class="lg:col-span-2 space-y-8">
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 border-b pb-3">1. Upload Datasets</h2>
+                    <div id="upload-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                        <!-- Upload Forms will be injected by JS -->
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 border-b pb-3">2. Generate Timetable</h2>
+                    <div class="pt-4">
+                        <button id="generate-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:bg-gray-400">
+                            Generate Master Timetable
+                        </button>
+                        <div id="generate-status" class="mt-4 text-center text-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Status & Requests -->
+            <div class="space-y-8">
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 border-b pb-3 mb-4">System Status</h2>
+                    <div id="status-container" class="space-y-3">
+                        <!-- Status indicators will be injected by JS -->
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <div class="flex justify-between items-center border-b pb-3 mb-4">
+                        <h2 class="text-xl font-semibold text-gray-700">Cancellation Requests</h2>
+                        <button id="refresh-requests-btn" class="text-sm text-blue-600 hover:underline">Refresh</button>
+                    </div>
+                    <div id="requests-list" class="space-y-3 max-h-96 overflow-y-auto">
+                        <!-- Requests will be injected by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Note: In a production environment, API_BASE_URL should be an empty string
+        // when the frontend is served from the same domain as the backend.
+        const API_BASE_URL = ''; // No need for full URL when served from Flask
+        const datasets = [
+            { id: 'teachers', name: 'Teachers', endpoint: '/api/admin/upload/teachers' },
+            { id: 'students', name: 'Students', endpoint: '/api/admin/upload/students' },
+            { id: 'courses', name: 'Courses', endpoint: '/api/admin/upload/courses' },
+            { id: 'classrooms', name: 'Classrooms', endpoint: '/api/admin/upload/classrooms' },
+            { id: 'feedback', name: 'Feedback', endpoint: '/api/admin/upload/feedback' }
+        ];
+
+        // --- Core Functions ---
+        function createUploadForms() {
+            const grid = document.getElementById('upload-grid');
+            datasets.forEach(d => {
+                const formHtml = `
+                    <div class="space-y-2">
+                        <p class="font-medium text-gray-600">${d.name}</p>
+                        <label for="${d.id}-file" class="file-input-label flex items-center justify-between w-full px-4 py-3 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer">
+                            <span id="${d.id}-text" class="text-sm text-gray-500">Choose a .csv file</span>
+                            <span id="${d.id}-status" class="status-dot dot-red"></span>
+                        </label>
+                        <input type="file" id="${d.id}-file" class="hidden" accept=".csv">
+                    </div>
+                `;
+                grid.innerHTML += formHtml;
+            });
+        }
+
+        async function handleFileUpload(dataset) {
+            const fileInput = document.getElementById(`${dataset.id}-file`);
+            const file = fileInput.files[0];
+            if (!file) return;
+
+            const textSpan = document.getElementById(`${dataset.id}-text`);
+            textSpan.textContent = 'Uploading...';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}${dataset.endpoint}`, { method: 'POST', body: formData });
+                // Check if response is JSON before parsing
+                const contentType = response.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    const result = await response.json();
+                    if (response.ok) {
+                        textSpan.textContent = file.name;
+                        document.getElementById(`${dataset.id}-status`).classList.replace('dot-red', 'dot-green');
+                    } else {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+                } else {
+                    const text = await response.text();
+                    throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+                }
+            } catch (error) {
+                textSpan.textContent = `Error: ${error.message}`;
+                fileInput.value = ''; // Reset file input
+            }
+        }
+
+        function createStatusIndicators() { /* ... unchanged ... */ }
+        
+        async function fetchAndDisplayRequests() {
+            const list = document.getElementById('requests-list');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/cancellation-requests`);
+                if (!response.ok) throw new Error('Server error');
+                const requests = await response.json();
+                
+                if (requests.length === 0) {
+                    list.innerHTML = `<p class="text-sm text-gray-500 text-center p-4">No pending requests.</p>`;
+                    return;
+                }
+                
+                list.innerHTML = '';
+                requests.forEach(req => {
+                    const item = document.createElement('div');
+                    item.className = 'p-3 bg-gray-50 rounded-lg border';
+                    item.innerHTML = `
+                        <p class="font-semibold text-gray-800 text-sm">${req.course_name}</p>
+                        <p class="text-xs text-gray-500">Teacher: ${req.teacher_id} | Slot: ${req.slot}</p>
+                        <div class="mt-2 flex justify-end space-x-2">
+                            <button onclick="handleRequestAction('${req.id}', 'reject')" class="px-2 py-1 text-xs font-medium text-red-700 bg-red-100 rounded hover:bg-red-200">Reject</button>
+                            <button onclick="handleRequestAction('${req.id}', 'approve')" class="px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded hover:bg-green-200">Approve</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                list.innerHTML = `<p class="text-sm text-red-500 text-center p-4">Could not fetch requests.</p>`;
+            }
+        }
+
+        async function handleRequestAction(requestId, action) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/handle-cancellation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ request_id: requestId, action: action })
+                });
+                if (!response.ok) throw new Error('Failed to process request');
+                fetchAndDisplayRequests();
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // --- Event Listeners ---
+        window.addEventListener('load', () => {
+            createUploadForms();
+            datasets.forEach(d => {
+                document.getElementById(`${d.id}-file`).addEventListener('change', () => handleFileUpload(d));
+            });
+            fetchAndDisplayRequests();
+        });
+
+        document.getElementById('generate-btn').addEventListener('click', async function() {
+            const statusDiv = document.getElementById('generate-status');
+            statusDiv.textContent = 'Generating... This may take a moment.';
+            this.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/admin/generate-timetable`, { method: 'POST' });
+                const result = await response.json();
+                statusDiv.textContent = response.ok ? `✅ ${result.message} (Score: ${result.best_score})` : `❌ Error: ${result.error}`;
+            } catch (error) {
+                statusDiv.textContent = `❌ Network Error: Could not connect to the server.`;
+            } finally {
+                this.disabled = false;
+            }
+        });
+
+        document.getElementById('refresh-requests-btn').addEventListener('click', fetchAndDisplayRequests);
+
+    </script>
+</body>
+</html>
+

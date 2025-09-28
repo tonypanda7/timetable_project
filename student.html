@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - My Timetable</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .timetable-grid { display: grid; grid-template-columns: 60px repeat(5, 1fr); grid-template-rows: 40px repeat(8, 1fr); gap: 4px; }
+        .class-cell { border-radius: 0.5rem; padding: 8px; min-height: 80px; }
+        .elective-checkbox:checked + label { border-color: #4f46e5; background-color: #eef2ff; }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <main class="w-full max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Student Dashboard</h1>
+                <p class="text-gray-500 mt-1">Logged in as: <span id="student-id-display" class="font-semibold text-gray-700"></span></p>
+            </div>
+            <div class="mt-4 sm:mt-0 flex space-x-2">
+                 <button class="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Download PDF</button>
+                 <button class="bg-white text-gray-700 font-semibold py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Download Excel</button>
+            </div>
+        </header>
+
+        <!-- Elective Selection Section -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 border-b pb-3 mb-4">Elective Course Selection</h2>
+            <div id="electives-container" class="space-y-4">
+                <p id="electives-loading" class="text-gray-500">Loading available electives...</p>
+            </div>
+            <div class="mt-6 flex justify-end">
+                <button id="save-electives-btn" class="bg-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:bg-gray-400">
+                    Save Selections
+                </button>
+            </div>
+             <div id="save-status" class="mt-3 text-right text-sm"></div>
+        </div>
+
+        <!-- Timetable Display -->
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+             <h2 class="text-2xl font-bold text-gray-800 border-b pb-3 mb-4">My Weekly Timetable</h2>
+            <div id="timetable-grid" class="timetable-grid hidden"></div>
+            <div id="timetable-loading" class="text-center py-20 text-gray-500">Select electives and wait for admin to generate the timetable.</div>
+        </div>
+    </main>
+
+    <script>
+        const API_BASE_URL = '';
+        // Use sessionStorage to get the ID for this specific tab
+        const STUDENT_ID = sessionStorage.getItem('loggedInUserId');
+        
+        function createGridHeaders(grid, days, periods) {
+            grid.innerHTML = '<div></div>'; // Empty top-left cell
+            days.forEach(day => {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'grid-header flex items-center justify-center';
+                dayCell.textContent = day;
+                grid.appendChild(dayCell);
+            });
+            for (let i = 1; i <= periods; i++) {
+                const timeCell = document.createElement('div');
+                timeCell.className = 'time-slot flex items-center justify-center';
+                timeCell.textContent = `${7 + i}:00`; // Assuming 8am start time
+                grid.appendChild(timeCell);
+                for (let j = 0; j < days.length; j++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.style.gridColumn = j + 2;
+                    emptyCell.style.gridRow = i + 1;
+                    emptyCell.className = 'bg-gray-50 rounded-lg';
+                    grid.appendChild(emptyCell);
+                }
+            }
+        }
+
+        async function fetchAndRenderTimetable() {
+            const grid = document.getElementById('timetable-grid');
+            const loading = document.getElementById('timetable-loading');
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/student/timetable?student_id=${STUDENT_ID}`);
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to fetch timetable.');
+                }
+                const data = await response.json();
+                if (data.timetable.length === 0) {
+                     throw new Error('Your personalized timetable has not been generated or is empty.');
+                }
+                loading.classList.add('hidden');
+                grid.classList.remove('hidden');
+                createGridHeaders(grid, data.days, data.periods);
+
+                const courseColors = {};
+                const colorClasses = ['bg-blue-100 text-blue-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-purple-100 text-purple-800', 'bg-pink-100 text-pink-800'];
+                let colorIndex = 0;
+                
+                data.timetable.forEach(item => {
+                    if (!courseColors[item.course_name]) {
+                        courseColors[item.course_name] = colorClasses[colorIndex % colorClasses.length];
+                        colorIndex++;
+                    }
+                    const cell = document.createElement('div');
+                    cell.style.gridColumn = data.days.indexOf(item.day) + 2;
+                    cell.style.gridRow = item.period + 1;
+                    cell.className = `class-cell ${courseColors[item.course_name]} flex flex-col justify-between`;
+                    cell.innerHTML = `<div><p class="font-bold text-sm">${item.course_name}</p><p class="text-xs opacity-80">Prof. ${item.teacher_name}</p></div><p class="text-xs font-semibold self-end">${item.room_name}</p>`;
+                    grid.appendChild(cell);
+                });
+            } catch (error) {
+                loading.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        async function fetchAndRenderElectives() {
+            const container = document.getElementById('electives-container');
+            const loading = document.getElementById('electives-loading');
+            try {
+                // In a real app, this would be looked up from a DB
+                const studentProgram = 'CS'; 
+                const response = await fetch(`${API_BASE_URL}/api/student/available-electives?student_id=${STUDENT_ID}&program=${studentProgram}`);
+                if (!response.ok) throw new Error('Could not fetch electives');
+                
+                const data = await response.json();
+                loading.classList.add('hidden');
+                container.innerHTML = '';
+
+                if (data.electives.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">No elective courses are available for your program.</p>';
+                    document.getElementById('save-electives-btn').disabled = true;
+                    return;
+                }
+
+                const electivesHtml = data.electives.map(course => `
+                    <div>
+                        <input type="checkbox" id="course-${course.id}" value="${course.id}" class="elective-checkbox hidden" name="electives" ${course.is_selected ? 'checked' : ''}>
+                        <label for="course-${course.id}" class="block p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500">
+                            <div class="flex justify-between">
+                                <span class="font-semibold text-gray-800">${course.course_name}</span>
+                                <span class="text-sm text-gray-500">${course.credits} Credits</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">${course.course_type}</p>
+                        </label>
+                    </div>
+                `).join('');
+                container.innerHTML = electivesHtml;
+            } catch(error) {
+                loading.textContent = `Error: ${error.message}`;
+                loading.classList.add('text-red-600');
+            }
+        }
+        
+        async function saveElectives() {
+            const selectedCourses = Array.from(document.querySelectorAll('input[name="electives"]:checked')).map(cb => cb.value);
+            const statusDiv = document.getElementById('save-status');
+            const saveBtn = document.getElementById('save-electives-btn');
+            statusDiv.textContent = 'Saving...';
+            saveBtn.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/student/save-electives`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ student_id: STUDENT_ID, course_ids: selectedCourses })
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.error || 'Failed to save');
+                statusDiv.textContent = `✅ ${result.message}`;
+                statusDiv.classList.remove('text-red-600');
+                statusDiv.classList.add('text-green-600');
+            } catch (error) {
+                statusDiv.textContent = `❌ Error: ${error.message}`;
+                statusDiv.classList.remove('text-green-600');
+                statusDiv.classList.add('text-red-600');
+            } finally {
+                saveBtn.disabled = false;
+            }
+        }
+
+        window.addEventListener('load', () => {
+            if (!STUDENT_ID) {
+                document.body.innerHTML = '<div class="text-center p-8 text-red-600">Error: Not logged in. Please <a href="/" class="text-blue-600 underline">login</a> first.</div>';
+                return;
+            }
+            document.getElementById('student-id-display').textContent = STUDENT_ID;
+            fetchAndRenderTimetable();
+            fetchAndRenderElectives();
+            document.getElementById('save-electives-btn').addEventListener('click', saveElectives);
+        });
+    </script>
+</body>
+</html>
+
